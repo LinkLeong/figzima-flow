@@ -1,0 +1,937 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="utf-8">
+    <title>Zima NAS Plugin</title>
+    <style>
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            font-size: 12px;
+            background: #ffffff;
+            color: #333;
+            height: 100vh;
+            display: flex;
+            flex-direction: column;
+        }
+
+        .header {
+            padding: 16px;
+            border-bottom: 1px solid #e5e5e5;
+            background: #f8f9fa;
+        }
+
+        .header h2 {
+            font-size: 14px;
+            font-weight: 600;
+            margin-bottom: 8px;
+            color: #1a1a1a;
+        }
+
+        .connection-status {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            font-size: 11px;
+        }
+
+        .status-indicator {
+            width: 8px;
+            height: 8px;
+            border-radius: 50%;
+            background: #dc3545;
+        }
+
+        .status-indicator.connected {
+            background: #28a745;
+        }
+
+        .path-nav {
+            padding: 12px 16px;
+            background: #f1f3f4;
+            border-bottom: 1px solid #e5e5e5;
+            font-size: 11px;
+            color: #666;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .path-nav button {
+            background: none;
+            border: none;
+            color: #0066cc;
+            cursor: pointer;
+            padding: 2px 4px;
+            border-radius: 2px;
+        }
+
+        .path-nav button:hover {
+            background: #e3f2fd;
+        }
+
+        .toolbar {
+            padding: 12px 16px;
+            border-bottom: 1px solid #e5e5e5;
+            display: flex;
+            gap: 8px;
+        }
+
+        .btn {
+            padding: 6px 12px;
+            border: 1px solid #d1d5db;
+            border-radius: 4px;
+            background: #ffffff;
+            color: #374151;
+            font-size: 11px;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+
+        .btn:hover {
+            background: #f9fafb;
+            border-color: #9ca3af;
+        }
+
+        .btn.primary {
+            background: #3b82f6;
+            color: white;
+            border-color: #3b82f6;
+        }
+
+        .btn.primary:hover {
+            background: #2563eb;
+        }
+
+        .btn:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+        }
+
+        .file-browser {
+            flex: 1;
+            overflow-y: auto;
+            padding: 8px;
+        }
+
+        .file-list {
+            list-style: none;
+        }
+
+        .file-item {
+            display: flex;
+            align-items: center;
+            padding: 8px 12px;
+            border-radius: 4px;
+            cursor: pointer;
+            transition: background 0.2s;
+            gap: 8px;
+        }
+
+        .file-item:hover {
+            background: #f1f3f4;
+        }
+
+        .file-item.selected {
+            background: #e3f2fd;
+            color: #1976d2;
+        }
+
+        .file-icon {
+            width: 16px;
+            height: 16px;
+            flex-shrink: 0;
+        }
+
+        .file-info {
+            flex: 1;
+            min-width: 0;
+        }
+
+        .file-name {
+            font-weight: 500;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+
+        .file-meta {
+            font-size: 10px;
+            color: #666;
+            margin-top: 2px;
+        }
+
+        .loading {
+            text-align: center;
+            padding: 32px;
+            color: #666;
+        }
+
+        .error {
+            text-align: center;
+            padding: 32px;
+            color: #dc3545;
+            background: #fff5f5;
+            margin: 16px;
+            border-radius: 4px;
+            border: 1px solid #fed7d7;
+        }
+
+        .empty {
+            text-align: center;
+            padding: 32px;
+            color: #666;
+        }
+
+        .footer {
+            padding: 12px 16px;
+            border-top: 1px solid #e5e5e5;
+            background: #f8f9fa;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .selected-info {
+            font-size: 11px;
+            color: #666;
+        }
+
+        .login-panel {
+            padding: 16px;
+            border-bottom: 1px solid #e5e5e5;
+            background: #f8f9fa;
+        }
+
+        .config-section h3 {
+            font-size: 12px;
+            font-weight: 600;
+            margin-bottom: 12px;
+            color: #1a1a1a;
+        }
+
+        .form-group {
+            margin-bottom: 12px;
+        }
+
+        .form-group label {
+            display: block;
+            font-size: 11px;
+            font-weight: 500;
+            margin-bottom: 4px;
+            color: #374151;
+        }
+
+        .form-group input {
+            width: 100%;
+            padding: 6px 8px;
+            border: 1px solid #d1d5db;
+            border-radius: 4px;
+            font-size: 11px;
+            background: white;
+        }
+
+        .form-group input:focus {
+            outline: none;
+            border-color: #3b82f6;
+            box-shadow: 0 0 0 2px rgba(59, 130, 246, 0.1);
+        }
+
+        .form-actions {
+            display: flex;
+            gap: 8px;
+            margin-top: 16px;
+        }
+
+        .main-content {
+            display: none;
+        }
+
+        .main-content.show {
+            display: flex;
+            flex-direction: column;
+            flex: 1;
+        }
+    </style>
+</head>
+<body>
+    <div class="header">
+        <h2>FigZima Flow</h2>
+        <div class="connection-status">
+            <div class="status-indicator" id="statusIndicator"></div>
+            <span id="statusText">Not Connected</span>
+        </div>
+    </div>
+
+    <!-- Login Configuration Panel -->
+    <div class="login-panel" id="loginPanel" style="display: none;">
+        <div class="config-section">
+            <h3>NAS Server Configuration</h3>
+            <div class="form-group">
+                <label>Server Address:</label>
+                <input type="text" id="serverUrl" value="" placeholder="https://your-nas-ip:port">
+            </div>
+            <div class="form-group">
+                <label>Username:</label>
+                <input type="text" id="username" value="" placeholder="Username">
+            </div>
+            <div class="form-group">
+                <label>Password:</label>
+                <input type="password" id="password" value="" placeholder="Password">
+            </div>
+            <div class="form-actions">
+                <button class="btn primary" id="loginBtn" onclick="performLogin()">🔐 Login</button>
+                <button class="btn" id="toggleConfigBtn" onclick="toggleConfig()" style="display: none;">⚙️ Settings</button>
+            </div>
+            <div class="help-text" style="margin-top: 12px; font-size: 10px; color: #666;">
+                <strong>Network Connection:</strong><br>
+                • Plugin will automatically try HTTP and HTTPS connections<br>
+                • If both fail, please check if NAS server is running<br>
+                • Ensure network connection is stable
+            </div>
+        </div>
+    </div>
+
+    <!-- Main Content Area -->
+    <div class="main-content show" id="mainContent">
+        <div class="path-nav" id="pathNav">
+            <button onclick="navigateToPath('/')" title="Root Directory">🏠</button>
+            <span>/</span>
+        </div>
+
+        <div class="toolbar">
+            <button class="btn" id="refreshBtn" onclick="refreshFiles()">🔄 Refresh</button>
+            <button class="btn" id="uploadBtn" onclick="uploadToNAS()">📤 Export to NAS</button>
+            <button class="btn" onclick="logout()">🚪 Logout</button>
+        </div>
+
+        <div class="file-browser">
+            <div class="loading" id="loadingIndicator">Loading file list...</div>
+            <div class="error" id="errorMessage" style="display: none;"></div>
+            <ul class="file-list" id="fileList" style="display: none;"></ul>
+            <div class="empty" id="emptyMessage" style="display: none;">This folder is empty</div>
+        </div>
+
+        <div class="footer">
+            <div class="selected-info" id="selectedInfo">Double-click file to import, double-click folder to enter</div>
+            <button class="btn" onclick="closePlugin()">Close</button>
+        </div>
+    </div>
+
+<script>
+// 全局状态
+let currentPath = '/media/ZimaOS-HD/Downloads';
+let selectedFile = null;
+let fileList = [];
+let isLoggedIn = false;
+
+// NAS配置 - 现在通过登录获取
+let NAS_CONFIG = {
+    baseUrl: '',
+    token: ''
+};
+
+// DOM元素
+const statusIndicator = document.getElementById('statusIndicator');
+const statusText = document.getElementById('statusText');
+const pathNav = document.getElementById('pathNav');
+const loadingIndicator = document.getElementById('loadingIndicator');
+const errorMessage = document.getElementById('errorMessage');
+const fileListElement = document.getElementById('fileList');
+const emptyMessage = document.getElementById('emptyMessage');
+const selectedInfo = document.getElementById('selectedInfo');
+const refreshBtn = document.getElementById('refreshBtn');
+const uploadBtn = document.getElementById('uploadBtn');
+const downloadBtn = document.getElementById('downloadBtn');
+
+// 初始化
+document.addEventListener('DOMContentLoaded', function() {
+    // 插件启动时先显示文件管理界面
+    console.log('Plugin loaded, showing file manager');
+    showMainContent();
+    // 尝试加载文件列表，如果失败会自动显示登录界面
+    loadFiles(currentPath);
+});
+
+// 执行登录
+function performLogin() {
+    const serverUrl = document.getElementById('serverUrl').value.trim();
+    const username = document.getElementById('username').value.trim();
+    const password = document.getElementById('password').value.trim();
+
+    if (!serverUrl || !username || !password) {
+        showNotification('Please fill in complete login information', 'warning');
+        return;
+    }
+
+    // 检查协议
+    if (serverUrl.startsWith('http://')) {
+        showNotification('HTTP protocol detected, try HTTPS or allow insecure content if connection fails', 'warning');
+    }
+
+    const loginBtn = document.getElementById('loginBtn');
+    loginBtn.disabled = true;
+    loginBtn.textContent = '🔄 Logging in...';
+
+    // 发送登录请求到主代码处理
+    parent.postMessage({
+        pluginMessage: {
+            type: 'login',
+            serverUrl: serverUrl,
+            username: username,
+            password: password
+        }
+    }, '*');
+
+    // 添加超时重置机制，防止按钮卡住
+    setTimeout(() => {
+        if (loginBtn.disabled && loginBtn.textContent === '🔄 Logging in...') {
+            console.log('Login timeout, resetting button');
+            loginBtn.disabled = false;
+            loginBtn.textContent = '🔐 Login';
+            showNotification('Login timeout, please try again', 'warning');
+        }
+    }, 30000); // 30秒超时
+}
+
+// 显示主要内容区域
+function showMainContent() {
+    console.log('Showing main content area');
+    const loginPanel = document.getElementById('loginPanel');
+    const mainContent = document.getElementById('mainContent');
+    const toggleBtn = document.getElementById('toggleConfigBtn');
+
+    if (loginPanel) loginPanel.style.display = 'none';
+    if (mainContent) mainContent.classList.add('show');
+    if (toggleBtn) toggleBtn.style.display = 'inline-block';
+
+    console.log('Main content displayed');
+}
+
+// 显示登录面板
+function showLoginPanel() {
+    console.log('Showing login panel');
+    const loginPanel = document.getElementById('loginPanel');
+    const mainContent = document.getElementById('mainContent');
+    const toggleBtn = document.getElementById('toggleConfigBtn');
+
+    if (loginPanel) loginPanel.style.display = 'block';
+    if (mainContent) mainContent.classList.remove('show');
+    if (toggleBtn) toggleBtn.style.display = 'none';
+    updateConnectionStatus(false);
+
+    console.log('Login panel displayed');
+}
+
+// 切换配置面板
+function toggleConfig() {
+    const loginPanel = document.getElementById('loginPanel');
+    const mainContent = document.getElementById('mainContent');
+
+    if (loginPanel.style.display === 'none') {
+        loginPanel.style.display = 'block';
+        mainContent.classList.remove('show');
+    } else {
+        loginPanel.style.display = 'none';
+        mainContent.classList.add('show');
+    }
+}
+
+// 处理登录成功（包括自动登录）
+function handleLoginSuccess(data, message) {
+    NAS_CONFIG.baseUrl = data.baseUrl;
+    NAS_CONFIG.token = data.token;
+
+    isLoggedIn = true;
+    showNotification(message, 'success');
+    showMainContent();
+    loadFiles(currentPath);
+
+    // 重置登录按钮
+    const loginBtn = document.getElementById('loginBtn');
+    if (loginBtn) {
+        loginBtn.disabled = false;
+        loginBtn.textContent = '🔐 Login';
+    }
+
+    // 确保导出按钮是启用的
+    const uploadBtn = document.getElementById('uploadBtn');
+    if (uploadBtn) {
+        uploadBtn.disabled = false;
+    }
+
+    // 如果有用户名，显示在界面上
+    if (data.username) {
+        const statusText = document.getElementById('statusText');
+        if (statusText) {
+            statusText.textContent = `Connected (${data.username})`;
+        }
+    }
+}
+
+// 登出
+function logout() {
+    // 发送登出请求到主代码
+    parent.postMessage({
+        pluginMessage: {
+            type: 'logout'
+        }
+    }, '*');
+
+    // 立即重置UI状态
+    isLoggedIn = false;
+    NAS_CONFIG.token = '';
+    NAS_CONFIG.baseUrl = '';
+
+    document.getElementById('loginPanel').style.display = 'block';
+    document.getElementById('mainContent').classList.remove('show');
+    document.getElementById('toggleConfigBtn').style.display = 'none';
+    updateConnectionStatus(false);
+
+    // 禁用导出按钮
+    const uploadBtn = document.getElementById('uploadBtn');
+    if (uploadBtn) {
+        uploadBtn.disabled = true;
+    }
+
+    // 重置状态文本
+    const statusText = document.getElementById('statusText');
+    if (statusText) {
+        statusText.textContent = 'Not Connected';
+    }
+}
+
+
+
+// 显示加载状态
+function showLoading() {
+    loadingIndicator.style.display = 'block';
+    errorMessage.style.display = 'none';
+    fileListElement.style.display = 'none';
+    emptyMessage.style.display = 'none';
+}
+
+// 显示错误
+function showError(message) {
+    loadingIndicator.style.display = 'none';
+    errorMessage.style.display = 'block';
+    errorMessage.textContent = message;
+    fileListElement.style.display = 'none';
+    emptyMessage.style.display = 'none';
+    updateConnectionStatus(false);
+}
+
+// 显示文件列表
+function showFileList() {
+    loadingIndicator.style.display = 'none';
+    errorMessage.style.display = 'none';
+
+    if (fileList.length === 0) {
+        fileListElement.style.display = 'none';
+        emptyMessage.style.display = 'block';
+    } else {
+        fileListElement.style.display = 'block';
+        emptyMessage.style.display = 'none';
+    }
+    updateConnectionStatus(true);
+}
+
+// 更新连接状态
+function updateConnectionStatus(connected) {
+    if (connected) {
+        statusIndicator.classList.add('connected');
+        statusText.textContent = 'Connected to NAS';
+    } else {
+        statusIndicator.classList.remove('connected');
+        statusText.textContent = 'Connection Failed';
+    }
+}
+
+// 格式化文件大小
+function formatFileSize(bytes) {
+    if (bytes === 0) return '0 B';
+    const k = 1024;
+    const sizes = ['B', 'KB', 'MB', 'GB'];
+    const i = Math.floor(Math.log(bytes) / Math.log(k));
+    return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i];
+}
+
+// 格式化日期
+function formatDate(timestamp) {
+    const date = new Date(timestamp * 1000);
+    return date.toLocaleDateString() + ' ' + date.toLocaleTimeString();
+}
+
+// 获取文件图标
+function getFileIcon(fileName, isDir) {
+    if (isDir) return '📁';
+
+    const ext = fileName.split('.').pop().toLowerCase();
+    const iconMap = {
+        'png': '🖼️', 'jpg': '🖼️', 'jpeg': '🖼️', 'gif': '🖼️', 'svg': '🖼️',
+        'pdf': '📄', 'doc': '📄', 'docx': '📄', 'txt': '📄',
+        'zip': '📦', 'rar': '📦', '7z': '📦',
+        'mp4': '🎬', 'avi': '🎬', 'mov': '🎬',
+        'mp3': '🎵', 'wav': '🎵', 'flac': '🎵',
+        'json': '📋', 'figma': '🎨', 'sketch': '🎨'
+    };
+
+    return iconMap[ext] || '📄';
+}
+
+// 加载文件列表
+async function loadFiles(path) {
+    if (!NAS_CONFIG.token) {
+        console.log('No token found, showing login panel');
+        showLoginPanel();
+        return;
+    }
+
+    showLoading();
+
+    try {
+        const url = `${NAS_CONFIG.baseUrl}/v2_1/files/file?path=${encodeURIComponent(path)}&index=0&size=10000&sfz=true&sort=name&direction=asc`;
+
+        const response = await fetch(url, {
+            headers: {
+                'Authorization': NAS_CONFIG.token
+            }
+        });
+
+        if (!response.ok) {
+            if (response.status === 401) {
+                // Token过期，需要重新登录
+                logout();
+                throw new Error('Login expired, please login again');
+            }
+            throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+        }
+
+        const data = await response.json();
+        fileList = data.content || [];
+        currentPath = path;
+
+        renderFileList();
+        updatePathNavigation();
+        showFileList();
+
+    } catch (error) {
+        console.error('Failed to load files:', error);
+        showError('Unable to connect to NAS server: ' + error.message);
+    }
+}
+
+// 渲染文件列表
+function renderFileList() {
+    fileListElement.innerHTML = '';
+
+    fileList.forEach((file, index) => {
+        const li = document.createElement('li');
+        li.className = 'file-item';
+
+        // 双击事件处理
+        li.ondblclick = () => {
+            if (file.is_dir) {
+                // 双击文件夹：进入文件夹
+                navigateToPath(file.path);
+            } else {
+                // 双击文件：导入到Figma
+                importFileToFigma(file);
+            }
+        };
+
+        // 单击事件：仅用于视觉反馈
+        li.onclick = () => {
+            // 清除之前的选择
+            document.querySelectorAll('.file-item').forEach(item => {
+                item.classList.remove('selected');
+            });
+            // 选择当前项
+            li.classList.add('selected');
+            selectedFile = file;
+
+            // 更新选择信息
+            if (file.is_dir) {
+                selectedInfo.textContent = `Selected folder: ${file.name} (double-click to enter)`;
+            } else {
+                selectedInfo.textContent = `Selected file: ${file.name} (double-click to import)`;
+            }
+        };
+
+        li.innerHTML = `
+            <div class="file-icon">${getFileIcon(file.name, file.is_dir)}</div>
+            <div class="file-info">
+                <div class="file-name">${file.name}</div>
+                <div class="file-meta">
+                    ${file.is_dir ? 'Folder' : formatFileSize(file.size)} • ${formatDate(file.modified)}
+                </div>
+            </div>
+        `;
+
+        fileListElement.appendChild(li);
+    });
+}
+
+// 更新选择信息显示
+function updateSelectionInfo() {
+    if (selectedFile) {
+        if (selectedFile.is_dir) {
+            selectedInfo.textContent = `Selected folder: ${selectedFile.name} (double-click to enter)`;
+        } else {
+            selectedInfo.textContent = `Selected file: ${selectedFile.name} (double-click to import)`;
+        }
+    } else {
+        selectedInfo.textContent = 'Double-click file to import, double-click folder to enter';
+    }
+}
+
+// 更新路径导航
+function updatePathNavigation() {
+    const pathParts = currentPath.split('/').filter(part => part);
+    let pathHtml = '<button onclick="navigateToPath(\'/\')" title="根目录">🏠</button>';
+
+    let buildPath = '';
+    pathParts.forEach((part, index) => {
+        buildPath += '/' + part;
+        pathHtml += ` <span>/</span> <button onclick="navigateToPath('${buildPath}')">${part}</button>`;
+    });
+
+    pathNav.innerHTML = pathHtml;
+}
+
+// 导航到指定路径
+function navigateToPath(path) {
+    if (path !== currentPath) {
+        loadFiles(path);
+    }
+}
+
+// 刷新文件列表
+function refreshFiles() {
+    loadFiles(currentPath);
+}
+
+// 导出到NAS
+function uploadToNAS() {
+    console.log('Export to NAS button clicked');
+
+    // 检查是否已登录
+    if (!NAS_CONFIG.token) {
+        console.log('Not logged in, showing warning');
+        showNotification('Please login first', 'warning');
+        return;
+    }
+
+    console.log('Logged in, current config:', NAS_CONFIG);
+
+    // 直接使用当前路径，不再使用prompt
+    const targetPath = currentPath;
+    console.log('Using current path as target:', targetPath);
+
+    showNotification('Exporting selected content to NAS...', 'info');
+
+    const message = {
+        pluginMessage: {
+            type: 'export-to-nas',
+            path: targetPath,
+            nasConfig: NAS_CONFIG
+        }
+    };
+
+    console.log('Sending export message to main code:', message);
+    parent.postMessage(message, '*');
+}
+
+// 导入文件到Figma（双击触发）
+function importFileToFigma(file) {
+    if (file.is_dir) {
+        showNotification('Cannot import folder', 'warning');
+        return;
+    }
+
+    // 检查文件格式是否支持
+    const supportedFormats = ['png', 'jpg', 'jpeg', 'gif', 'svg', 'json'];
+    const fileExtension = file.name.split('.').pop()?.toLowerCase();
+
+    if (!supportedFormats.includes(fileExtension)) {
+        showNotification(`Unsupported file format: ${fileExtension}`, 'warning');
+        return;
+    }
+
+    showNotification(`Importing ${file.name}...`, 'info');
+
+    parent.postMessage({
+        pluginMessage: {
+            type: 'import-from-nas',
+            file: file,
+            nasConfig: NAS_CONFIG
+        }
+    }, '*');
+}
+
+// 关闭插件
+function closePlugin() {
+    parent.postMessage({ pluginMessage: { type: 'cancel' } }, '*');
+}
+
+// 显示通知消息
+function showNotification(message, type = 'info') {
+    // 创建通知元素
+    const notification = document.createElement('div');
+    notification.className = `notification ${type}`;
+    notification.style.cssText = `
+        position: fixed;
+        top: 16px;
+        right: 16px;
+        padding: 12px 16px;
+        border-radius: 4px;
+        color: white;
+        font-size: 12px;
+        z-index: 1000;
+        max-width: 300px;
+        word-wrap: break-word;
+        animation: slideIn 0.3s ease-out;
+    `;
+
+    // 根据类型设置背景色
+    switch (type) {
+        case 'success':
+            notification.style.backgroundColor = '#28a745';
+            break;
+        case 'error':
+            notification.style.backgroundColor = '#dc3545';
+            break;
+        case 'warning':
+            notification.style.backgroundColor = '#ffc107';
+            notification.style.color = '#212529';
+            break;
+        default:
+            notification.style.backgroundColor = '#17a2b8';
+    }
+
+    notification.textContent = message;
+    document.body.appendChild(notification);
+
+    // 3秒后自动移除
+    setTimeout(() => {
+        notification.style.animation = 'slideOut 0.3s ease-in';
+        setTimeout(() => {
+            if (notification.parentNode) {
+                notification.parentNode.removeChild(notification);
+            }
+        }, 300);
+    }, 3000);
+}
+
+// 添加CSS动画
+const style = document.createElement('style');
+style.textContent = `
+    @keyframes slideIn {
+        from { transform: translateX(100%); opacity: 0; }
+        to { transform: translateX(0); opacity: 1; }
+    }
+    @keyframes slideOut {
+        from { transform: translateX(0); opacity: 1; }
+        to { transform: translateX(100%); opacity: 0; }
+    }
+`;
+document.head.appendChild(style);
+
+// 监听来自主代码的消息
+window.addEventListener('message', (event) => {
+    console.log('UI收到消息:', event);
+    console.log('消息数据:', event.data);
+
+    // 修复消息解析 - 处理双重嵌套的pluginMessage
+    const outerMessage = event.data.pluginMessage;
+    if (!outerMessage) {
+        console.log('没有pluginMessage');
+        return;
+    }
+
+    console.log('pluginMessage内容:', outerMessage);
+
+    // 检查是否有嵌套的pluginMessage
+    const actualMessage = outerMessage.pluginMessage || outerMessage;
+    console.log('实际消息内容:', actualMessage);
+
+    const { type, error, data } = actualMessage;
+    console.log('解析的消息:', { type, error, data });
+
+    switch (type) {
+        case 'login-success': {
+            // 登录成功
+            console.log('Received login success message:', data);
+            handleLoginSuccess(data, 'Login successful!');
+            break;
+        }
+
+        case 'auto-login-success': {
+            // 自动登录成功
+            console.log('Received auto-login success message:', data);
+            handleLoginSuccess(data, 'Welcome back! Auto-logged in');
+            break;
+        }
+
+        case 'login-error': {
+            console.log('Received login error message:', error);
+            showNotification('Login failed: ' + (error || 'Unknown error'), 'error');
+
+            // 重置登录按钮
+            const loginBtnError = document.getElementById('loginBtn');
+            if (loginBtnError) {
+                loginBtnError.disabled = false;
+                loginBtnError.textContent = '🔐 Login';
+            }
+            break;
+        }
+
+        case 'logout-success': {
+            console.log('Logout successful');
+            showNotification('Safely logged out', 'info');
+            break;
+        }
+
+        case 'export-success':
+            showNotification('File exported successfully!', 'success');
+            refreshFiles(); // 刷新文件列表以显示新上传的文件
+            break;
+
+        case 'export-error':
+            showNotification('Export failed: ' + (error || 'Unknown error'), 'error');
+            break;
+
+        case 'import-success':
+            showNotification('File imported successfully!', 'success');
+            break;
+
+        case 'import-error':
+            showNotification('Import failed: ' + (error || 'Unknown error'), 'error');
+            break;
+
+        case 'no-selection':
+            showNotification('Please select layers or pages to export first', 'warning');
+            break;
+
+        case 'network-error':
+            showNotification('Network connection failed, please check NAS server connection', 'error');
+            updateConnectionStatus(false);
+            showLoginPanel();
+            break;
+
+        case 'auth-error':
+            showNotification('Authentication failed, please login again', 'error');
+            updateConnectionStatus(false);
+            showLoginPanel();
+            break;
+    }
+});
+
+</script>
+</body>
+</html>

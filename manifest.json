@@ -1,0 +1,19 @@
+{
+  "name": "FigZima Flow",
+  "id": "1529032092846089870",
+  "api": "1.0.0",
+  "main": "code.js",
+  "capabilities": [],
+  "enableProposedApi": false,
+  "documentAccess": "dynamic-page",
+  "editorType": [
+    "figma"
+  ],
+  "ui": "ui.html",
+  "networkAccess": {
+    "allowedDomains": [
+      "*"
+    ],
+    "reasoning": "This plugin needs to connect to local NAS servers which may have various IP addresses and ports that cannot be predetermined."
+  }
+}
