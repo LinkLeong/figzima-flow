@@ -2,165 +2,166 @@
 
 A Figma plugin for seamless file management with NAS servers, supporting import and export operations between Figma and your local NAS.
 
-## 功能特性
+## Features
 
-- 🗂️ **文件浏览器**: 浏览NAS服务器上的文件和文件夹
-- 📤 **导出功能**: 将Figma设计导出为PNG、JSON等格式并上传到NAS
-- 📥 **导入功能**: 从NAS下载图片、SVG、JSON文件并导入到Figma
-- 🔄 **实时同步**: 支持文件列表刷新和实时状态更新
-- ⚠️ **错误处理**: 完善的错误提示和网络状态监控
+- 🗂️ **File Browser**: Browse files and folders on your NAS server
+- 📤 **Export Function**: Export Figma designs as PNG, JSON and other formats to NAS
+- 📥 **Import Function**: Download images, SVG, JSON files from NAS and import to Figma
+- 🔄 **Real-time Sync**: Support file list refresh and real-time status updates
+- ⚠️ **Error Handling**: Comprehensive error notifications and network status monitoring
 
-## 支持的文件格式
+## Supported File Formats
 
-### 导出格式
-- PNG (2x分辨率)
-- JSON (页面数据)
+### Export Formats
+- PNG (2x resolution)
+- JSON (page data)
 
-### 导入格式
-- 图片: PNG, JPG, JPEG, GIF
-- 矢量: SVG
-- 数据: JSON
+### Import Formats
+- Images: PNG, JPG, JPEG, GIF
+- Vector: SVG
+- Data: JSON
 
-## 安装和使用
+## Installation and Usage
 
-### 1. 环境准备
+### 1. Prerequisites
 
-确保你已经安装了Node.js和npm：
+Make sure you have Node.js and npm installed:
+
 ```bash
-# 检查Node.js版本
+# Check Node.js version
 node --version
 
-# 检查npm版本
+# Check npm version
 npm --version
 ```
 
-### 2. 安装依赖
+### 2. Install Dependencies
 
-在插件目录中运行：
+Run in the plugin directory:
+
 ```bash
 npm install
 ```
 
-### 3. 编译代码
+### 3. Build the Code
 
 ```bash
 npm run build
 ```
 
-### 4. 在Figma中安装插件
+### 4. Install Plugin in Figma
 
-1. 打开Figma
-2. 进入 `Plugins > Development > Import plugin from manifest...`
-3. 选择这个插件文件夹
-4. 插件将出现在你的插件列表中
+1. Open Figma
+2. Go to `Plugins > Development > Import plugin from manifest...`
+3. Select this plugin folder
+4. The plugin will appear in your plugin list
 
-### 5. 配置NAS连接
+### 5. Configure NAS Connection
 
-在使用插件之前，你需要在代码中配置NAS服务器信息：
+The plugin will prompt you to enter your NAS server information when you first use it:
 
-1. 打开 `ui.html` 文件
-2. 找到 `NAS_CONFIG` 对象
-3. 更新以下配置：
-   ```javascript
-   const NAS_CONFIG = {
-       baseUrl: 'http://你的NAS地址:端口',
-       token: '你的访问令牌'
-   };
-   ```
+- **Server Address**: Your NAS server URL (e.g., `https://your-nas-ip:port`)
+- **Username**: Your NAS username
+- **Password**: Your NAS password
 
-## 使用说明
+The plugin will automatically save your login session for future use.
 
-### 导出文件到NAS
+## How to Use
 
-1. 在Figma中选择要导出的图层或对象
-2. 打开Zima NAS插件
-3. 浏览到目标文件夹
-4. 点击"📤 导出到NAS"按钮
-5. 插件会自动导出选中内容为PNG和JSON文件
+### Export Files to NAS
 
-### 从NAS导入文件
+1. Select the layers or objects you want to export in Figma
+2. Open the FigZima Flow plugin
+3. Navigate to the target folder
+4. Click the "📤 Export to NAS" button
+5. The plugin will automatically export selected content as PNG and JSON files
 
-1. 打开Zima NAS插件
-2. 浏览到包含文件的文件夹
-3. 选择要导入的文件
-4. 点击"📥 导入到Figma"按钮
-5. 文件将被导入到当前Figma页面
+### Import Files from NAS
 
-### 文件浏览
+1. Open the FigZima Flow plugin
+2. Navigate to the folder containing files
+3. Double-click the file you want to import
+4. The file will be imported to the current Figma page
 
-- 点击文件夹图标进入子文件夹
-- 使用路径导航快速跳转
-- 点击"🔄 刷新"按钮更新文件列表
-- 连接状态显示在顶部
+### File Browsing
 
-## API接口说明
+- Double-click folder icons to enter subfolders
+- Use path navigation for quick jumps
+- Click "🔄 Refresh" button to update file list
+- Connection status is displayed at the top
 
-### 文件列表接口
-```
-GET /v2_1/files/file?path={路径}&index=0&size=10000&sfz=true&sort=name&direction=asc
+## API Interface Documentation
+
+### File List Interface
+
+```http
+GET /v2_1/files/file?path={path}&index=0&size=10000&sfz=true&sort=name&direction=asc
 Headers: Authorization: {token}
 ```
 
-### 文件上传接口
-```
-POST /v2_1/files/upload
-Headers: 
+### File Upload Interface
+
+```http
+POST /v2_1/files/file/uploadV2
+Headers:
   Authorization: {token}
-  Content-Type: application/json
+  Content-Type: multipart/form-data
 Body: {
-  filename: "文件名",
-  path: "目标路径", 
-  data: "base64编码的文件数据",
-  encoding: "base64"
+  path: "target_path",
+  file: "file_data_with_filename:filesize"
 }
 ```
 
-### 文件下载接口
-```
-GET /v2_1/files/download?path={文件路径}
-Headers: Authorization: {token}
-```
+### File Download Interface
 
-## 开发说明
-
-### 项目结构
-```
-├── code.ts          # 主插件代码
-├── ui.html          # 用户界面
-├── manifest.json    # 插件配置
-├── package.json     # 项目配置
-└── tsconfig.json    # TypeScript配置
+```http
+GET /v3/file?token={access_token}&files={file_path}&action=download
 ```
 
-### 开发流程
+## Development Guide
 
-1. 修改代码后运行 `npm run build` 编译
-2. 在Figma中重新加载插件测试
-3. 查看浏览器控制台获取调试信息
+### Project Structure
 
-### 注意事项
+```
+├── code.ts          # Main plugin code
+├── ui.html          # User interface
+├── manifest.json    # Plugin configuration
+├── package.json     # Project configuration
+└── tsconfig.json    # TypeScript configuration
+```
 
-- 插件使用自定义的base64编码/解码函数，因为Figma环境中不支持原生的btoa/atob
-- 网络请求受Figma插件安全策略限制，需要在manifest.json中配置允许的域名
-- 文件上传使用JSON格式传输base64编码的数据，而不是FormData
+### Development Workflow
 
-## 故障排除
+1. After modifying code, run `npm run build` to compile
+2. Reload the plugin in Figma for testing
+3. Check browser console for debugging information
 
-### 连接失败
-- 检查NAS服务器地址和端口是否正确
-- 确认访问令牌是否有效
-- 检查网络连接
+### Technical Notes
 
-### 导入/导出失败
-- 确认文件格式是否支持
-- 检查文件大小是否过大
-- 查看控制台错误信息
+- Plugin uses custom base64 encoding/decoding functions as Figma environment doesn't support native btoa/atob
+- Network requests are limited by Figma plugin security policies, allowed domains must be configured in manifest.json
+- File upload uses multipart/form-data format instead of JSON with base64 encoding
 
-### 编译错误
-- 运行 `npm install` 重新安装依赖
-- 检查TypeScript语法错误
-- 确认所有必需的类型定义已安装
+## Troubleshooting
 
-## 许可证
+### Connection Failed
 
-此项目仅供学习和开发使用。
+- Check if NAS server address and port are correct
+- Verify access credentials are valid
+- Ensure network connection is stable
+
+### Import/Export Failed
+
+- Confirm file format is supported
+- Check if file size is too large
+- Review console error messages
+
+### Build Errors
+
+- Run `npm install` to reinstall dependencies
+- Check TypeScript syntax errors
+- Ensure all required type definitions are installed
+
+## License
+
+This project is for learning and development purposes.
